@@ -1,6 +1,9 @@
 {
-  "name": "semaio/magento2-configimportexport",
-  "description": "Import/Export core_config_data values in Magento 2",
+  "name": "netz98/magento2-configimportexport",
+  "description": "Import/Export core_config_data values in Magento 2, patch version of semaio/magento2-configimportexport",
+  "replace": {
+    "semaio/magento2-configimportexport":"2.*"
+  },
   "require": {
     "php": "~5.5.0|~5.6.0|~7.0.0",
     "symfony/yaml": "~2.0",
@@ -9,8 +12,12 @@
     "magento/framework": "*"
   },
   "type": "magento2-module",
-  "license": "OSL-3.0",
+  "license": "(BSD and OSL-3.0 and proprietary)",
   "authors": [
+    {
+      "name": "The original authors",
+      "email": "disclosed@example.org"
+    },
     {
       "name": "Rouven Alexander Rieker",
       "email": "therouv@googlemail.com"
