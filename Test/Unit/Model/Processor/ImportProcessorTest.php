@@ -5,29 +5,38 @@
  */
 namespace Semaio\ConfigImportExport\Test\Unit\Model\Processor;
 
+use Magento\Framework\App\Config\Storage\WriterInterface;
+use Semaio\ConfigImportExport\Model\Converter\ScopeConverterInterface;
 use Semaio\ConfigImportExport\Model\Processor\ImportProcessor;
+use Semaio\ConfigImportExport\Model\Validator\ScopeValidatorInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Class ImportProcessorTest
  *
  * @package Semaio\ConfigImportExport\Test\Unit\Model\Processor
  */
-class ImportProcessorTest extends \PHPUnit_Framework_TestCase
+class ImportProcessorTest extends \PHPUnit\Framework\TestCase
 {
     /**
-     * @var \Symfony\Component\Console\Output\OutputInterface
+     * @var OutputInterface
      */
     private $outputMock;
 
     /**
-     * @var \Magento\Framework\App\Config\Storage\WriterInterface
+     * @var WriterInterface
      */
     private $configWriterMock;
 
     /**
-     * @var \Semaio\ConfigImportExport\Model\Validator\ScopeValidatorInterface
+     * @var ScopeValidatorInterface
      */
     private $scopeValidatorMock;
+
+    /**
+     * @var ScopeConverterInterface
+     */
+    private $scopeConverterMock;
 
     /**
      * Set up test class
@@ -35,9 +44,10 @@ class ImportProcessorTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         parent::setUp();
-        $this->outputMock = $this->getMock('Symfony\Component\Console\Output\OutputInterface');
-        $this->configWriterMock = $this->getMock('Magento\Framework\App\Config\Storage\WriterInterface');
-        $this->scopeValidatorMock = $this->getMock('Semaio\ConfigImportExport\Model\Validator\ScopeValidatorInterface');
+        $this->outputMock = $this->getMockBuilder(OutputInterface::class)->getMock();
+        $this->configWriterMock = $this->getMockBuilder(WriterInterface::class)->getMock();
+        $this->scopeValidatorMock = $this->getMockBuilder(ScopeValidatorInterface::class)->getMock();
+        $this->scopeConverterMock = $this->getMockBuilder(ScopeConverterInterface::class)->getMock();
     }
 
     /**
@@ -45,12 +55,17 @@ class ImportProcessorTest extends \PHPUnit_Framework_TestCase
      */
     public function processWithoutFiles()
     {
-        $finderMock = $this->getMock('Semaio\ConfigImportExport\Model\File\Finder', ['find']);
-        $finderMock->expects($this->once())->method('find')->willReturn([]);
+        $finderMock = $this->getMockBuilder('Semaio\ConfigImportExport\Model\File\Finder')
+            ->setMethods(['find'])
+            ->getMock();
+        $finderMock
+            ->expects($this->once())
+            ->method('find')
+            ->willReturn([]);
 
-        $this->setExpectedException('InvalidArgumentException');
+        $this->expectException('InvalidArgumentException');
 
-        $processor = new ImportProcessor($this->configWriterMock, $this->scopeValidatorMock);
+        $processor = new ImportProcessor($this->configWriterMock, $this->scopeValidatorMock, $this->scopeConverterMock);
         $processor->setFinder($finderMock);
         $processor->process();
     }
@@ -60,7 +75,9 @@ class ImportProcessorTest extends \PHPUnit_Framework_TestCase
      */
     public function processWithInvalidScopeData()
     {
-        $finderMock = $this->getMock('Semaio\ConfigImportExport\Model\File\Finder', ['find']);
+        $finderMock = $this->getMockBuilder('Semaio\ConfigImportExport\Model\File\Finder')
+            ->setMethods(['find'])
+            ->getMock();
         $finderMock->expects($this->once())->method('find')->willReturn(['abc.yaml']);
 
         $parseResult = [
@@ -71,13 +88,15 @@ class ImportProcessorTest extends \PHPUnit_Framework_TestCase
             ]
         ];
 
-        $readerMock = $this->getMock('Semaio\ConfigImportExport\Model\File\Reader\YamlReader', ['parse']);
+        $readerMock = $this->getMockBuilder('Semaio\ConfigImportExport\Model\File\Reader\YamlReader')
+            ->setMethods(['parse'])
+            ->getMock();
         $readerMock->expects($this->once())->method('parse')->willReturn($parseResult);
 
         $this->scopeValidatorMock->expects($this->once())->method('validate')->willReturn(false);
         $this->configWriterMock->expects($this->never())->method('save');
 
-        $processor = new ImportProcessor($this->configWriterMock, $this->scopeValidatorMock);
+        $processor = new ImportProcessor($this->configWriterMock, $this->scopeValidatorMock, $this->scopeConverterMock);
         $processor->setFormat('yaml');
         $processor->setOutput($this->outputMock);
         $processor->setFinder($finderMock);
@@ -91,7 +110,9 @@ class ImportProcessorTest extends \PHPUnit_Framework_TestCase
      */
     public function process()
     {
-        $finderMock = $this->getMock('Semaio\ConfigImportExport\Model\File\Finder', ['find']);
+        $finderMock = $this->getMockBuilder('Semaio\ConfigImportExport\Model\File\Finder')
+            ->setMethods(['find'])
+            ->getMock();
         $finderMock->expects($this->once())->method('find')->willReturn(['abc.yaml']);
 
         $parseResult = [
@@ -102,13 +123,15 @@ class ImportProcessorTest extends \PHPUnit_Framework_TestCase
             ]
         ];
 
-        $readerMock = $this->getMock('Semaio\ConfigImportExport\Model\File\Reader\YamlReader', ['parse']);
+        $readerMock = $this->getMockBuilder('Semaio\ConfigImportExport\Model\File\Reader\YamlReader')
+            ->setMethods(['parse'])
+            ->getMock();
         $readerMock->expects($this->once())->method('parse')->willReturn($parseResult);
 
         $this->scopeValidatorMock->expects($this->once())->method('validate')->willReturn(true);
         $this->configWriterMock->expects($this->once())->method('save');
 
-        $processor = new ImportProcessor($this->configWriterMock, $this->scopeValidatorMock);
+        $processor = new ImportProcessor($this->configWriterMock, $this->scopeValidatorMock, $this->scopeConverterMock);
         $processor->setOutput($this->outputMock);
         $processor->setFinder($finderMock);
         $processor->setReader($readerMock);

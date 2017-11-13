@@ -6,6 +6,7 @@
 namespace Semaio\ConfigImportExport\Model\Processor;
 
 use Magento\Framework\App\Config\Storage\WriterInterface;
+use Semaio\ConfigImportExport\Model\Converter\ScopeConverterInterface;
 use Semaio\ConfigImportExport\Model\Validator\ScopeValidatorInterface;
 use Semaio\ConfigImportExport\Model\File\FinderInterface;
 use Semaio\ConfigImportExport\Model\File\Reader\ReaderInterface;
@@ -38,15 +39,23 @@ class ImportProcessor extends AbstractProcessor implements ImportProcessorInterf
     private $reader;
 
     /**
-     * @param WriterInterface         $configWriter
+     * @var ScopeConverterInterface
+     */
+    private $scopeConverter;
+
+    /**
+     * @param WriterInterface $configWriter
      * @param ScopeValidatorInterface $scopeValidator
+     * @param ScopeConverterInterface $scopeConverter
      */
     public function __construct(
         WriterInterface $configWriter,
-        ScopeValidatorInterface $scopeValidator
+        ScopeValidatorInterface $scopeValidator,
+        ScopeConverterInterface $scopeConverter
     ) {
         $this->configWriter = $configWriter;
         $this->scopeValidator = $scopeValidator;
+        $this->scopeConverter = $scopeConverter;
     }
 
     /**
@@ -62,7 +71,7 @@ class ImportProcessor extends AbstractProcessor implements ImportProcessorInterf
 
         foreach ($files as $file) {
             $valuesSet = 0;
-            $configurations = $this->reader->parse($file);
+            $configurations = $this->getConfigurationsFromFile($file);
             foreach ($configurations as $configPath => $configValues) {
                 $scopeConfigValues = $this->transformConfigToScopeConfig($configPath, $configValues);
                 foreach ($scopeConfigValues as $scopeConfigValue) {
@@ -70,7 +79,7 @@ class ImportProcessor extends AbstractProcessor implements ImportProcessorInterf
                         $configPath,
                         $scopeConfigValue['value'],
                         $scopeConfigValue['scope'],
-                        $scopeConfigValue['scope_id']
+                        $this->scopeConverter->convert($scopeConfigValue['scope_id'], $scopeConfigValue['scope'])
                     );
 
                     $this->getOutput()->writeln(sprintf('<comment>%s => %s</comment>', $configPath, $scopeConfigValue['value']));
@@ -80,6 +89,22 @@ class ImportProcessor extends AbstractProcessor implements ImportProcessorInterf
 
             $this->getOutput()->writeln(sprintf('<info>Processed: %s with %s value(s).</info>', $file, $valuesSet));
         }
+    }
+
+    /**
+     * @param string $file
+     * @return array
+     */
+    private function getConfigurationsFromFile($file)
+    {
+        $configurations = $this->reader->parse($file);
+        if (!is_array($configurations)) {
+            $this->getOutput()->writeln(
+                sprintf("<error>Skipped: '%s' (not an array: %s).</error>", $file, var_export($configurations, true))
+            );
+            $configurations = [];
+        }
+        return $configurations;
     }
 
     /**
@@ -107,9 +132,11 @@ class ImportProcessor extends AbstractProcessor implements ImportProcessorInterf
     {
         $return = [];
         foreach ($config as $scope => $scopeIdValue) {
-            foreach ($scopeIdValue as $scopeId => $value) {
-                $scopeId = (int)$scopeId;
+            if (!$scopeIdValue) {
+                continue;
+            }
 
+            foreach ($scopeIdValue as $scopeId => $value) {
                 if (!$this->scopeValidator->validate($scope, $scopeId)) {
                     $errorMsg = sprintf(
                         '<error>ERROR: Invalid scopeId "%s" for scope "%s" (%s => %s)</error>',
@@ -121,10 +148,6 @@ class ImportProcessor extends AbstractProcessor implements ImportProcessorInterf
                     $this->getOutput()->writeln($errorMsg);
                     continue;
                 }
-
-                // Valid scope Write output
-                $value = str_replace("\r", '', addcslashes($value, '"'));
-                $value = str_replace("\n", '\\n', $value);
 
                 $return[] = [
                     'value'    => $value,

@@ -4,9 +4,25 @@ This module provides new CLI commands for Magento 2 to import/export data in/fro
 
 This module is inspired by the awesome n98-magerun plugin "HarrisStreet ImpEx" by @SchumacherFM for Magento 1 which you can find [here](https://github.com/Zookal/HarrisStreet-ImpEx).
 
+## Installation
+
+**Add the Package to your composer.json** 
+
+``` bash
+composer require semaio/magento2-configimportexport
+```
+
+
+**Enable and install the Module**
+``` bash
+php bin/magento module:enable Semaio_ConfigImportExport
+```
+
 ## Facts
 
-Version: 2.0.0
+* Version: 3.0.0
+* Magento Support: >= 2.2
+* PHP Versions: 7.0 + 7.1
 
 ## Functionality
 
@@ -100,6 +116,10 @@ Any contribution to the development of MageSetup is highly welcome. The best pos
 ## Licence
 
 [Open Software License (OSL 3.0)](http://opensource.org/licenses/osl-3.0.php)
+
+## Contributors
+
+Huge thanks to all [contributors](https://github.com/semaio/Magento2-ConfigImportExport/graphs/contributors) who contributed to this module.
 
 ## Copyright
 
